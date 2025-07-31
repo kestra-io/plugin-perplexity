@@ -35,14 +35,14 @@ import java.util.stream.Stream;
 @Plugin(
     examples = {
         @Example(
-            title = "Simple Perplexity chat",
+            title = "Ask a question to Perplexity",
             full = true,
             code = """
                 id: perplexity_chat
-                namespace: company.name
+                namespace: company.team
 
                 tasks:
-                  - id: chat_completion
+                  - id: ask_ai
                     type: io.kestra.plugin.perplexity.ChatCompletion
                     apiKey: '{{ secret("PERPLEXITY_API_KEY") }}'
                     model: sonar
