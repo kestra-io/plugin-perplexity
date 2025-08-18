@@ -1,5 +1,9 @@
 package io.kestra.plugin.perplexity;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.http.HttpResponse;
 import io.kestra.core.http.client.HttpClient;
@@ -24,8 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @SuperBuilder
 @Getter
@@ -50,6 +52,35 @@ import java.util.stream.Stream;
                       - type: USER
                         content: "What is Kestra?"
                     temperature: 0.7
+                """
+        ),
+        @Example(
+            title = "Perplexity chat with Structured Output (JSON Schema)",
+            full = true,
+            code = """
+                id: perplexity_structured
+                namespace: company.name
+
+                tasks:
+                  - id: chat_completion_structured
+                    type: io.kestra.plugin.perplexity.ChatCompletion
+                    apiKey: '{{ secret("PERPLEXITY_API_KEY") }}'
+                    model: sonar
+                    messages:
+                      - type: USER
+                        content: "Make a JSON todo from this casual note: schedule team check-in next week; tags: work, planning;"
+                    jsonResponseSchema: |
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["title", "done", "tags"],
+                        "properties": {
+                          "title": { "type": "string" },
+                          "done":  { "type": "boolean" },
+                          "tags":  { "type": "array", "items": { "type": "string" } },
+                          "notes": { "type": "string" }
+                        }
+                      }
                 """
         )
     }
@@ -125,19 +156,28 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
     )
     private Property<Integer> maxTokens;
 
+    @Schema(
+        title = "JSON Response Schema",
+        description = "JSON schema (as string) to force a custom Structured Output. " +
+            "If provided, the request will include response_format = { type: \"json_schema\", json_schema: { schema: <your schema> } }. "
+    )
+    private Property<String> jsonResponseSchema;
+
+
     @Override
     public Output run(RunContext runContext) throws Exception {
-        var renderedApiKey = runContext.render(this.apiKey).as(String.class).orElseThrow();
-        var renderedModel = runContext.render(this.model).as(String.class).orElseThrow();
-        var renderedTemperature = runContext.render(this.temperature).as(Double.class).orElse(0.2);
-        var renderedTopP = runContext.render(this.topP).as(Double.class).orElse(0.9);
-        var renderedTopK = runContext.render(this.topK).as(Integer.class).orElse(50);
-        var renderedStream = runContext.render(this.stream).as(Boolean.class).orElse(false);
-        var renderedPresencePenalty = runContext.render(this.presencePenalty).as(Double.class).orElse(0.0);
-        var renderedFrequencyPenalty = runContext.render(this.frequencyPenalty).as(Double.class).orElse(0.0);
-        var renderedMaxTokens = runContext.render(this.maxTokens).as(Integer.class).orElse(null);
+        var rApiKey = runContext.render(this.apiKey).as(String.class).orElseThrow();
+        var rModel = runContext.render(this.model).as(String.class).orElseThrow();
+        var rTemperature = runContext.render(this.temperature).as(Double.class).orElse(0.2);
+        var rTopP = runContext.render(this.topP).as(Double.class).orElse(0.9);
+        var rTopK = runContext.render(this.topK).as(Integer.class).orElse(0);
+        var rStream = runContext.render(this.stream).as(Boolean.class).orElse(false);
+        var rPresencePenalty = runContext.render(this.presencePenalty).as(Double.class).orElse(0.0);
+        var rFrequencyPenalty = runContext.render(this.frequencyPenalty).as(Double.class).orElse(0.0);
+        var rMaxTokens = runContext.render(this.maxTokens).as(Integer.class).orElse(null);
+        var rJsonResponseSchema = runContext.render(this.jsonResponseSchema).as(String.class).orElse(null);
 
-        var renderedMessages = runContext.render(this.messages)
+        var rMessages = runContext.render(this.messages)
             .asList(ChatMessage.class)
             .stream()
             .map(msg -> Map.of("role", msg.type().role(), "content", Objects.toString(msg.content(), "")))
@@ -145,24 +185,29 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
 
         var requestBody = new HashMap<String, Object>();
 
-        requestBody.put("model", renderedModel);
-        requestBody.put("messages", renderedMessages);
-        requestBody.put("temperature", renderedTemperature);
-        requestBody.put("top_p", renderedTopP);
-        requestBody.put("top_k", renderedTopK);
-        requestBody.put("stream", renderedStream);
-        requestBody.put("presence_penalty", renderedPresencePenalty);
-        requestBody.put("frequency_penalty", renderedFrequencyPenalty);
+        requestBody.put("model", rModel);
+        requestBody.put("messages", rMessages);
+        requestBody.put("temperature", rTemperature);
+        requestBody.put("top_p", rTopP);
+        requestBody.put("top_k", rTopK);
+        requestBody.put("stream", rStream);
+        requestBody.put("presence_penalty", rPresencePenalty);
+        requestBody.put("frequency_penalty", rFrequencyPenalty);
 
-        if (renderedMaxTokens != null) {
-            requestBody.put("max_tokens", renderedMaxTokens);
+        if (rMaxTokens != null) {
+            requestBody.put("max_tokens", rMaxTokens);
+        }
+
+        if (rJsonResponseSchema != null) {
+            ObjectNode responseFormat = getJsonNodes(rJsonResponseSchema);
+            requestBody.put("response_format", responseFormat);
         }
 
         try (var client = new HttpClient(runContext, HttpConfiguration.builder().build())) {
             var httpRequest = HttpRequest.builder()
                 .uri(URI.create(API_URL))
                 .method("POST")
-                .addHeader("Authorization", "Bearer " + renderedApiKey)
+                .addHeader("Authorization", "Bearer " + rApiKey)
                 .addHeader("Content-Type", "application/json")
                 .body(HttpRequest.JsonRequestBody.builder()
                     .content(requestBody)
@@ -196,6 +241,21 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
         }
     }
 
+    private static ObjectNode getJsonNodes(String schemaJson) throws JsonProcessingException {
+        var mapper = new ObjectMapper();
+        JsonNode schemaNode = mapper.readTree(schemaJson);
+
+        // { type: "json_schema", json_schema: { schema: {...} } }
+        ObjectNode jsonSchemaNode = mapper.createObjectNode();
+        jsonSchemaNode.set("schema", schemaNode);
+
+        ObjectNode responseFormat = mapper.createObjectNode();
+        responseFormat.put("type", "json_schema");
+        responseFormat.set("json_schema", jsonSchemaNode);
+
+        return responseFormat;
+    }
+
     @Builder
     @Getter
     public static class Output implements io.kestra.core.models.tasks.Output {
@@ -208,6 +268,7 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
         private final String rawResponse;
     }
 
+    @Builder
     public record ChatMessage(ChatMessageType type, String content) {}
 
     public enum ChatMessageType {
