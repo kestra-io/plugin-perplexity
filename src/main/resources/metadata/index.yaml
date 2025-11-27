@@ -1,0 +1,8 @@
+group: io.kestra.plugin.perplexity
+name: "perplexity"
+title: "Perplexity"
+description: "A plugin to use Perplexity."
+body: ""
+videos: []
+createdBy: "Kestra Core Team"
+managedBy: "Kestra Core Team"
