@@ -1,8 +1,8 @@
 group: io.kestra.plugin.perplexity
 name: "perplexity"
 title: "Perplexity"
-description: "A plugin to use Perplexity."
-body: ""
+description: "Tasks that request chat completions from Perplexity models."
+body: "Set your Perplexity API key, choose the target model, and pass in messages or prompts to generate responses with usage details you can log or feed into downstream steps."
 videos: []
 createdBy: "Kestra Core Team"
 managedBy: "Kestra Core Team"
