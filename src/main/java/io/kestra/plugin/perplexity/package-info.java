@@ -1,7 +1,10 @@
 @PluginSubGroup(
     title = "Perplexity plugin",
     description = "A plugin to use Perplexity.",
-    categories = PluginSubGroup.PluginCategory.AI
+    categories = PluginSubGroup.PluginCategory.AI,
+    categories = {
+        PluginSubGroup.PluginCategory.AI
+    }
 )
 package io.kestra.plugin.perplexity;
 
