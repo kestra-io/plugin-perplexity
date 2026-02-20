@@ -82,29 +82,55 @@ import java.util.Objects;
                         }
                       }
                 """
+        ),
+        @Example(
+            title = "System prompt with length and repetition controls",
+            full = true,
+            code = """
+                id: perplexity_guarded
+                namespace: company.team
+
+                tasks:
+                  - id: chat_completion_guarded
+                    type: io.kestra.plugin.perplexity.ChatCompletion
+                    apiKey: '{{ secret("PERPLEXITY_API_KEY") }}'
+                    model: sonar-pro
+                    messages:
+                      - type: SYSTEM
+                        content: "You are a brief release-notes generator."
+                      - type: USER
+                        content: "Summarize changes: added metrics; fixed retry bug; improved docs."
+                    maxTokens: 120
+                    presencePenalty: 0.8
+                    frequencyPenalty: 0.6
+                """
         )
     }
+)
+@Schema(
+    title = "Send chat completion to Perplexity",
+    description = "Calls Perplexity `/chat/completions` with rendered messages and returns the first choice. Requires an API key bearer token; defaults: temperature 0.2, top_p 0.9, top_k 0, stream false, penalties 0.0. Supports optional JSON Schema structured output via `response_format`."
 )
 public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.Output> {
     private static final String API_URL = "https://api.perplexity.ai/chat/completions";
 
     @Schema(
-        title = "API Key",
-        description = "The Perplexity API key used for authentication."
+        title = "Perplexity API key",
+        description = "Bearer token sent in the Authorization header; store as a secret."
     )
     @NotNull
     private Property<String> apiKey;
 
     @Schema(
-        title = "Model",
-        description = "The Perplexity model to use (e.g., `sonar`, `sonar-pro`)."
+        title = "Model name",
+        description = "Model identifier accepted by Perplexity (for example `sonar`, `sonar-pro`)."
     )
     @NotNull
     private Property<String> model;
 
     @Schema(
-        title = "Messages",
-        description = "List of chat messages in conversational order."
+        title = "Conversation messages",
+        description = "Ordered chat turns; roles are mapped to `system`, `assistant`, or `user` before sending."
     )
     @NotNull
     private Property<List<ChatMessage>> messages;
@@ -112,54 +138,54 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
     @Builder.Default
     @Schema(
         title = "Temperature",
-        description = "The amount of randomness in the response, valued between 0 and 2."
+        description = "Randomness factor between 0 and 2; default 0.2."
     )
     private Property<Double> temperature = Property.ofValue(0.2);
 
     @Schema(
         title = "Top P",
-        description = "The nucleus sampling threshold, valued between 0 and 1."
+        description = "Nucleus sampling probability cap (0–1); default 0.9."
     )
     @Builder.Default
     private Property<@Max(1) Double> topP = Property.ofValue(0.9);
 
     @Schema(
         title = "Top K",
-        description = "The number of tokens to keep for top-k filtering."
+        description = "Top-k filter size; `0` keeps all tokens (default)."
     )
     @Builder.Default
     private Property<Integer> topK = Property.ofValue(0);
 
     @Schema(
         title = "Stream",
-        description = "Determines whether to stream the response incrementally."
+        description = "Passes `stream` to the API; keep false (default) because the task reads only the final response body."
     )
     @Builder.Default
     private Property<Boolean> stream = Property.ofValue(false);
 
     @Schema(
         title = "Presence Penalty",
-        description = "Positive values increase the likelihood of discussing new topics. Valued between 0 and 2.0."
+        description = "Penalty for repeating topics; range 0–2; default 0.0."
     )
     @Builder.Default
     private Property<@Max(2) Double> presencePenalty = Property.ofValue(0.0);
 
     @Schema(
         title = "Frequency Penalty",
-        description = "Decreases likelihood of repetition based on prior frequency. Valued between 0 and 2.0."
+        description = "Penalty based on token frequency; range 0–2; default 0.0."
     )
     @Builder.Default
     private Property<@Max(2) Double> frequencyPenalty = Property.ofValue(0.0);
 
     @Schema(
-        title = "The maximum number of tokens to generate."
+        title = "Maximum tokens",
+        description = "Upper bound on completion tokens; omit to let the model decide."
     )
     private Property<Integer> maxTokens;
 
     @Schema(
         title = "JSON Response Schema",
-        description = "JSON schema (as string) to force a custom Structured Output. " +
-            "If provided, the request will include response_format = { type: \"json_schema\", json_schema: { schema: <your schema> } }. "
+        description = "JSON Schema string for Structured Output; passed as `response_format` with `type: json_schema` and `json_schema.schema` set to the provided document."
     )
     private Property<String> jsonResponseSchema;
 
@@ -260,11 +286,15 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
     @Getter
     public static class Output implements io.kestra.core.models.tasks.Output {
         @Schema(
-            title = "The generated text output"
+            title = "Completion text",
+            description = "First choice `message.content` returned by Perplexity."
         )
         private final String outputText;
 
-        @Schema(title = "Full, raw response from the API.")
+        @Schema(
+            title = "Raw response",
+            description = "Full JSON payload returned by the Perplexity API as a string."
+        )
         private final String rawResponse;
     }
 
