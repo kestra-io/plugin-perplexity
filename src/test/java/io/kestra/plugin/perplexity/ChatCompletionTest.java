@@ -1,15 +1,18 @@
 package io.kestra.plugin.perplexity;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.kestra.core.junit.annotations.KestraTest;
-import io.kestra.core.models.property.Property;
-import io.kestra.core.runners.RunContextFactory;
-import jakarta.inject.Inject;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import java.util.List;
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.kestra.core.junit.annotations.KestraTest;
+import io.kestra.core.models.property.Property;
+import io.kestra.core.runners.RunContextFactory;
+
+import jakarta.inject.Inject;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -25,16 +28,18 @@ class ChatCompletionTest {
     @EnabledIfEnvironmentVariable(named = "PERPLEXITY_API_KEY", matches = ".+")
     @Test
     void shouldGetResultsWithChatCompletion() throws Exception {
-        var runContext = runContextFactory.of(Map.of(
-            "apiKey", PERPLEXITY_API_KEY,
-            "model", "sonar",
-            "messages", List.of(
-                ChatCompletion.ChatMessage.builder()
-                    .type(ChatCompletion.ChatMessageType.USER)
-                    .content("What is 2 plus 2? Answer with a number.")
-                    .build()
+        var runContext = runContextFactory.of(
+            Map.of(
+                "apiKey", PERPLEXITY_API_KEY,
+                "model", "sonar",
+                "messages", List.of(
+                    ChatCompletion.ChatMessage.builder()
+                        .type(ChatCompletion.ChatMessageType.USER)
+                        .content("What is 2 plus 2? Answer with a number.")
+                        .build()
                 )
-        ));
+            )
+        );
 
         var task = ChatCompletion.builder()
             .apiKey(Property.ofExpression("{{ apiKey }}"))
@@ -66,17 +71,19 @@ class ChatCompletionTest {
             }
             """;
 
-        var runContext = runContextFactory.of(Map.of(
-            "apiKey", PERPLEXITY_API_KEY,
-            "model", "sonar",
-            "messages", List.of(
-                ChatCompletion.ChatMessage.builder()
-                    .type(ChatCompletion.ChatMessageType.USER)
-                    .content("Make a JSON todo from this note: schedule team check-in next week; tags: work, planning; add a brief note.")
-                    .build()
-            ),
-            "jsonResponseSchema", schema
-        ));
+        var runContext = runContextFactory.of(
+            Map.of(
+                "apiKey", PERPLEXITY_API_KEY,
+                "model", "sonar",
+                "messages", List.of(
+                    ChatCompletion.ChatMessage.builder()
+                        .type(ChatCompletion.ChatMessageType.USER)
+                        .content("Make a JSON todo from this note: schedule team check-in next week; tags: work, planning; add a brief note.")
+                        .build()
+                ),
+                "jsonResponseSchema", schema
+            )
+        );
 
         var task = io.kestra.plugin.perplexity.ChatCompletion.builder()
             .apiKey(Property.ofExpression("{{ apiKey }}"))

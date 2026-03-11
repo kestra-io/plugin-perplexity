@@ -1,9 +1,17 @@
 package io.kestra.plugin.perplexity;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.http.HttpResponse;
 import io.kestra.core.http.client.HttpClient;
@@ -16,18 +24,12 @@ import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.models.tasks.Task;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.serializers.JacksonMapper;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 @SuperBuilder
 @Getter
@@ -189,7 +191,6 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
     )
     private Property<String> jsonResponseSchema;
 
-
     @Override
     public Output run(RunContext runContext) throws Exception {
         var rApiKey = runContext.render(this.apiKey).as(String.class).orElseThrow();
@@ -235,9 +236,11 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
                 .method("POST")
                 .addHeader("Authorization", "Bearer " + rApiKey)
                 .addHeader("Content-Type", "application/json")
-                .body(HttpRequest.JsonRequestBody.builder()
-                    .content(requestBody)
-                    .build())
+                .body(
+                    HttpRequest.JsonRequestBody.builder()
+                        .content(requestBody)
+                        .build()
+                )
                 .build();
 
             HttpResponse<String> response = client.request(httpRequest, String.class);
@@ -258,7 +261,6 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
             var choices = (List<Map<String, Object>>) parsed.get("choices");
             var message = (Map<String, Object>) choices.getFirst().get("message");
             var content = (String) message.get("content");
-
 
             return Output.builder()
                 .outputText(content)
@@ -299,7 +301,8 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
     }
 
     @Builder
-    public record ChatMessage(ChatMessageType type, String content) {}
+    public record ChatMessage(ChatMessageType type, String content) {
+    }
 
     public enum ChatMessageType {
         SYSTEM("system"),
