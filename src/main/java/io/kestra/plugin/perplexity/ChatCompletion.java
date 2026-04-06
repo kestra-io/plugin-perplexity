@@ -30,6 +30,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @Getter
@@ -121,6 +122,7 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
         description = "Bearer token sent in the Authorization header; store as a secret."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<String> apiKey;
 
     @Schema(
@@ -128,6 +130,7 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
         description = "Model identifier accepted by Perplexity (for example `sonar`, `sonar-pro`)."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<String> model;
 
     @Schema(
@@ -135,6 +138,7 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
         description = "Ordered chat turns; roles are mapped to `system`, `assistant`, or `user` before sending."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<List<ChatMessage>> messages;
 
     @Builder.Default
@@ -142,6 +146,7 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
         title = "Temperature",
         description = "Randomness factor between 0 and 2; default 0.2."
     )
+    @PluginProperty(group = "advanced")
     private Property<Double> temperature = Property.ofValue(0.2);
 
     @Schema(
@@ -156,6 +161,7 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
         description = "Top-k filter size; `0` keeps all tokens (default)."
     )
     @Builder.Default
+    @PluginProperty(group = "destination")
     private Property<Integer> topK = Property.ofValue(0);
 
     @Schema(
@@ -163,6 +169,7 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
         description = "Passes `stream` to the API; keep false (default) because the task reads only the final response body."
     )
     @Builder.Default
+    @PluginProperty(group = "advanced")
     private Property<Boolean> stream = Property.ofValue(false);
 
     @Schema(
@@ -183,12 +190,14 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
         title = "Maximum tokens",
         description = "Upper bound on completion tokens; omit to let the model decide."
     )
+    @PluginProperty(group = "connection")
     private Property<Integer> maxTokens;
 
     @Schema(
         title = "JSON Response Schema",
         description = "JSON Schema string for Structured Output; passed as `response_format` with `type: json_schema` and `json_schema.schema` set to the provided document."
     )
+    @PluginProperty(group = "connection")
     private Property<String> jsonResponseSchema;
 
     @Override
