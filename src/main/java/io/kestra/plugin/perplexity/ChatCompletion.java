@@ -49,7 +49,7 @@ import io.kestra.core.models.annotations.PluginProperty;
                 tasks:
                   - id: ask_ai
                     type: io.kestra.plugin.perplexity.ChatCompletion
-                    apiKey: '{{ secret("PERPLEXITY_API_KEY") }}'
+                    apiKey: "{{ secret('PERPLEXITY_API_KEY') }}"
                     model: sonar
                     messages:
                       - type: USER
@@ -67,7 +67,7 @@ import io.kestra.core.models.annotations.PluginProperty;
                 tasks:
                   - id: chat_completion_structured
                     type: io.kestra.plugin.perplexity.ChatCompletion
-                    apiKey: '{{ secret("PERPLEXITY_API_KEY") }}'
+                    apiKey: "{{ secret('PERPLEXITY_API_KEY') }}"
                     model: sonar
                     messages:
                       - type: USER
@@ -96,7 +96,7 @@ import io.kestra.core.models.annotations.PluginProperty;
                 tasks:
                   - id: chat_completion_guarded
                     type: io.kestra.plugin.perplexity.ChatCompletion
-                    apiKey: '{{ secret("PERPLEXITY_API_KEY") }}'
+                    apiKey: "{{ secret('PERPLEXITY_API_KEY') }}"
                     model: sonar-pro
                     messages:
                       - type: SYSTEM
@@ -122,7 +122,7 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
         description = "Bearer token sent in the Authorization header; store as a secret."
     )
     @NotNull
-    @PluginProperty(group = "main")
+    @PluginProperty(group = "main", secret = true)
     private Property<String> apiKey;
 
     @Schema(
@@ -190,7 +190,7 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
         title = "Maximum tokens",
         description = "Upper bound on completion tokens; omit to let the model decide."
     )
-    @PluginProperty(group = "connection")
+    @PluginProperty(secret = true, group = "connection")
     private Property<Integer> maxTokens;
 
     @Schema(
