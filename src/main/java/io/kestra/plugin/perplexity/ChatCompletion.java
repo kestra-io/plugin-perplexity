@@ -190,7 +190,7 @@ public class ChatCompletion extends Task implements RunnableTask<ChatCompletion.
         title = "Maximum tokens",
         description = "Upper bound on completion tokens; omit to let the model decide."
     )
-    @PluginProperty(secret = true, group = "connection")
+    @PluginProperty(group = "connection")
     private Property<Integer> maxTokens;
 
     @Schema(
